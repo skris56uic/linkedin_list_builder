@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>LinkedIn List Builder</title>
+  <style>
+    body {
+      width: 320px;
+      padding: 16px;
+      font-family: -apple-system, system-ui, sans-serif;
+      color: #333;
+    }
+    h1 {
+      font-size: 18px;
+      margin-top: 0;
+      color: #0a66c2;
+    }
+    .stats {
+      margin-bottom: 20px;
+      font-size: 14px;
+    }
+    .preview-list {
+      max-height: 200px;
+      overflow-y: auto;
+      border: 1px solid #eee;
+      border-radius: 4px;
+      padding: 8px;
+      margin-bottom: 16px;
+      font-size: 12px;
+    }
+    .preview-item {
+      padding: 4px 0;
+      border-bottom: 1px solid #f3f3f3;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .preview-item:last-child {
+      border-bottom: none;
+    }
+    .actions {
+      display: flex;
+      gap: 10px;
+    }
+    button {
+      flex: 1;
+      padding: 8px;
+      border: none;
+      border-radius: 16px;
+      cursor: pointer;
+      font-weight: 600;
+      transition: background 0.2s;
+    }
+    .btn-primary {
+      background-color: #0a66c2;
+      color: white;
+    }
+    .btn-primary:hover {
+      background-color: #004182;
+    }
+    .btn-secondary {
+      background-color: #e0e0e0;
+      color: #333;
+    }
+    .btn-secondary:hover {
+      background-color: #d0d0d0;
+    }
+    .empty-state {
+      color: #666;
+      font-style: italic;
+      text-align: center;
+      padding: 20px 0;
+    }
+  </style>
+</head>
+<body>
+  <h1>LinkedIn List Builder</h1>
+  
+  <div class="stats">
+    Selected Profiles: <strong id="count">0</strong>
+  </div>
+
+  <div id="preview" class="preview-list">
+    <!-- List items will go here -->
+    <div class="empty-state">No profiles selected yet.</div>
+  </div>
+
+  <div class="actions">
+    <button id="exportBtn" class="btn-primary">Export CSV</button>
+    <button id="clearBtn" class="btn-secondary">Clear</button>
+  </div>
+
+  <script src="popup.js"></script>
+</body>
+</html>

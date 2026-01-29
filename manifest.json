@@ -1,0 +1,24 @@
+{
+  "manifest_version": 3,
+  "name": "LinkedIn List Builder",
+  "version": "1.0",
+  "description": "Select and build a list of profiles from LinkedIn search results.",
+  "permissions": [
+    "storage"
+  ],
+  "action": {
+    "default_popup": "popup.html"
+  },
+  "content_scripts": [
+    {
+      "matches": ["https://www.linkedin.com/search/results/people/*"],
+      "js": ["content.js"],
+      "css": ["styles.css"]
+    }
+  ],
+  "icons": {
+     "16": "icon16.png",
+     "48": "icon48.png",
+     "128": "icon128.png"
+  }
+}
