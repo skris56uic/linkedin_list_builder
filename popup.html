@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html>
+
 <head>
   <meta charset="utf-8">
   <title>LinkedIn List Builder</title>
@@ -10,15 +11,18 @@
       font-family: -apple-system, system-ui, sans-serif;
       color: #333;
     }
+
     h1 {
       font-size: 18px;
       margin-top: 0;
       color: #0a66c2;
     }
+
     .stats {
       margin-bottom: 20px;
       font-size: 14px;
     }
+
     .preview-list {
       max-height: 200px;
       overflow-y: auto;
@@ -28,6 +32,7 @@
       margin-bottom: 16px;
       font-size: 12px;
     }
+
     .preview-item {
       padding: 4px 0;
       border-bottom: 1px solid #f3f3f3;
@@ -35,13 +40,16 @@
       overflow: hidden;
       text-overflow: ellipsis;
     }
+
     .preview-item:last-child {
       border-bottom: none;
     }
+
     .actions {
       display: flex;
       gap: 10px;
     }
+
     button {
       flex: 1;
       padding: 8px;
@@ -51,31 +59,80 @@
       font-weight: 600;
       transition: background 0.2s;
     }
+
     .btn-primary {
       background-color: #0a66c2;
       color: white;
     }
+
     .btn-primary:hover {
       background-color: #004182;
     }
+
     .btn-secondary {
       background-color: #e0e0e0;
       color: #333;
     }
+
     .btn-secondary:hover {
       background-color: #d0d0d0;
     }
+
     .empty-state {
       color: #666;
       font-style: italic;
       text-align: center;
       padding: 20px 0;
     }
+
+    .input-group {
+      margin-bottom: 12px;
+    }
+
+    .input-group label {
+      display: block;
+      font-size: 12px;
+      font-weight: 600;
+      margin-bottom: 4px;
+      color: #333;
+    }
+
+    .input-group input {
+      width: 100%;
+      padding: 8px 10px;
+      border: 1px solid #ccc;
+      border-radius: 6px;
+      font-size: 13px;
+      box-sizing: border-box;
+      transition: border-color 0.2s;
+    }
+
+    .input-group input:focus {
+      outline: none;
+      border-color: #0a66c2;
+    }
+
+    .input-group input.input-error {
+      border-color: #d11124;
+    }
+
+    .required {
+      color: #d11124;
+    }
+
+    .error-msg {
+      display: block;
+      font-size: 11px;
+      color: #d11124;
+      margin-top: 3px;
+      min-height: 14px;
+    }
   </style>
 </head>
+
 <body>
   <h1>LinkedIn List Builder</h1>
-  
+
   <div class="stats">
     Selected Profiles: <strong id="count">0</strong>
   </div>
@@ -85,6 +142,18 @@
     <div class="empty-state">No profiles selected yet.</div>
   </div>
 
+  <div class="input-group">
+    <label for="csvName">CSV File Name <span class="required">*</span></label>
+    <input type="text" id="csvName" placeholder="e.g. acme_corp_leads" required>
+    <span id="csvNameError" class="error-msg"></span>
+  </div>
+
+  <div class="input-group">
+    <label for="companyUrl">Company URL <span class="required">*</span></label>
+    <input type="text" id="companyUrl" placeholder="e.g. https://www.acme.com" required>
+    <span id="companyUrlError" class="error-msg"></span>
+  </div>
+
   <div class="actions">
     <button id="exportBtn" class="btn-primary">Export CSV</button>
     <button id="clearBtn" class="btn-secondary">Clear</button>
@@ -92,4 +161,5 @@
 
   <script src="popup.js"></script>
 </body>
+
 </html>
