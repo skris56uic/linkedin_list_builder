@@ -31,6 +31,64 @@ async function toggleSelection(profile, btnElement) {
     await chrome.storage.local.set({ selectedProfiles });
 }
 
+// Find an element matching data-view-name="edge-creation-*-action"
+const EDGE_ACTION_REGEX = /^edge-creation-.+-action$/;
+
+function findEdgeActionBtn(container) {
+    const candidates = container.querySelectorAll('[data-view-name]');
+    for (const el of candidates) {
+        if (EDGE_ACTION_REGEX.test(el.getAttribute('data-view-name'))) {
+            return el;
+        }
+    }
+    return null;
+}
+
+// Wait for the Connect/Follow button to load in the DOM, then inject Select below it
+function waitForConnectBtn(container, profile) {
+    // Check if it's already there
+    const existing = findEdgeActionBtn(container);
+    if (existing) {
+        injectSelectBtn(existing.parentElement, profile);
+        return;
+    }
+
+    // Observe the container for the button to appear
+    const observer = new MutationObserver((mutations, obs) => {
+        const actionBtn = findEdgeActionBtn(container);
+        if (actionBtn) {
+            obs.disconnect();
+            injectSelectBtn(actionBtn.parentElement, profile);
+        }
+    });
+
+    observer.observe(container, { childList: true, subtree: true });
+
+    // Safety timeout: stop observing after 5 seconds
+    setTimeout(() => observer.disconnect(), 5000);
+}
+
+// Create and inject the Select button inside the given parent element
+function injectSelectBtn(parentEl, profile) {
+    // Avoid duplicate buttons
+    if (parentEl.querySelector('.llb-select-btn')) return;
+
+    const btn = document.createElement('button');
+    btn.className = 'llb-select-btn';
+    const isSelected = !!selectedProfiles[profile.url];
+
+    btn.textContent = isSelected ? "Unselect" : "Select";
+    if (isSelected) btn.classList.add("llb-selected");
+
+    btn.addEventListener('click', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        toggleSelection(profile, btn);
+    });
+
+    parentEl.appendChild(btn);
+}
+
 // Function to process a single search result card
 function processCard(card) {
     if (card.dataset.llbProcessed) return;
@@ -74,16 +132,13 @@ function processCard(card) {
             }
         }
 
-        // Find action container (Message button area)
-        const msgBtn = container.querySelector('[data-view-name="relationship-building-button"]');
-        if (msgBtn) {
-            // We want to append our button next to this one.
-            // The msgBtn is usually inside a container. We can append to that container.
-            actionsContainer = msgBtn.parentElement;
-        } else {
-            // Fallback
-            actionsContainer = container.querySelector('.entity-result__actions') || container;
-        }
+        // Build profile from the data we already extracted
+        const profile = { name, url, headline, location };
+
+        // Wait for the Connect button to appear in the DOM, then insert Select below it
+        waitForConnectBtn(container, profile);
+        card.dataset.llbProcessed = "true";
+        return;
 
     } else {
         // Strategy B: Legacy classes (Old Layout)
@@ -114,19 +169,13 @@ function processCard(card) {
     btn.textContent = isSelected ? "Unselect" : "Select";
     if (isSelected) btn.classList.add("llb-selected");
 
-    // Adjust style for new layout if needed
-    if (isNewLayout) {
-        btn.style.marginLeft = "8px";
-        btn.style.alignSelf = "center";
-    }
-
     btn.addEventListener('click', (e) => {
         e.preventDefault();
         e.stopPropagation();
         toggleSelection(profile, btn);
     });
 
-    // Inject button
+    // Inject button (legacy layout only at this point)
     if (actionsContainer) {
         actionsContainer.appendChild(btn);
     } else {
