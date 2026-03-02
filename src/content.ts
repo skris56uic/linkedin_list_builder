@@ -10,11 +10,30 @@
     type ProfileMap = Record<string, Profile>;
 
     let selectedProfiles: ProfileMap = {};
+    let storedCompanyId: string | null = null;
 
-    chrome.storage.local.get(['selectedProfiles'], (result: { selectedProfiles?: ProfileMap }) => {
+    function getCompanyIdFromUrl(): string | null {
+        try {
+            const params = new URLSearchParams(window.location.search);
+            const raw = params.get('currentCompany');
+            if (!raw) return null;
+            const parsed = JSON.parse(raw);
+            return Array.isArray(parsed) ? parsed[0] : null;
+        } catch {
+            return null;
+        }
+    }
+
+    chrome.storage.local.get(['selectedProfiles', 'storedCompanyId'], (result: { selectedProfiles?: ProfileMap; storedCompanyId?: string }) => {
         if (result.selectedProfiles) {
             selectedProfiles = result.selectedProfiles;
         }
+        storedCompanyId = result.storedCompanyId || null;
+
+        const currentCompanyId = getCompanyIdFromUrl();
+        console.log('[LLB] Current company ID:', currentCompanyId);
+        console.log('[LLB] Stored company ID:', storedCompanyId);
+
         observeMutations();
     });
 
@@ -36,6 +55,13 @@
         }
     });
 
+    function resetAllButtons(): void {
+        document.querySelectorAll('.llb-select-btn').forEach(btn => {
+            btn.textContent = 'Select';
+            btn.classList.remove('llb-selected');
+        });
+    }
+
     async function toggleSelection(profile: Profile, btnElement: HTMLButtonElement): Promise<void> {
         const profileId = profile.url;
 
@@ -44,47 +70,31 @@
             btnElement.textContent = "Select";
             btnElement.classList.remove("llb-selected");
         } else {
+            const currentCompanyId = getCompanyIdFromUrl();
+            console.log('[LLB] Adding profile — URL company:', currentCompanyId, '| Stored:', storedCompanyId);
+
+            if (currentCompanyId && storedCompanyId && currentCompanyId !== storedCompanyId) {
+                console.log('[LLB] Company changed! Clearing all profiles.');
+                selectedProfiles = {};
+                resetAllButtons();
+            }
+
+            if (currentCompanyId) {
+                storedCompanyId = currentCompanyId;
+            }
+
             selectedProfiles[profileId] = profile;
             btnElement.textContent = "Unselect";
             btnElement.classList.add("llb-selected");
         }
 
-        await chrome.storage.local.set({ selectedProfiles });
+        await chrome.storage.local.set({ selectedProfiles, storedCompanyId });
     }
 
-    // Match edge-creation-*-action (connect, follow, etc.)
-    const EDGE_ACTION_REGEX = /^edge-creation-.+-action$/;
-
-    function findEdgeActionBtn(container: Element): Element | null {
-        for (const el of container.querySelectorAll('[data-view-name]')) {
-            if (EDGE_ACTION_REGEX.test(el.getAttribute('data-view-name') || '')) {
-                return el;
-            }
-        }
-        return null;
-    }
-
-    function waitForConnectBtn(container: Element, profile: Profile): void {
-        const existing = findEdgeActionBtn(container);
-        if (existing && existing.parentElement) {
-            injectSelectBtn(existing.parentElement, profile);
-            return;
-        }
-
-        const observer = new MutationObserver((_mutations, obs) => {
-            const actionBtn = findEdgeActionBtn(container);
-            if (actionBtn && actionBtn.parentElement) {
-                obs.disconnect();
-                injectSelectBtn(actionBtn.parentElement, profile);
-            }
-        });
-
-        observer.observe(container, { childList: true, subtree: true });
-        setTimeout(() => observer.disconnect(), 5000);
-    }
-
-    function injectSelectBtn(parentEl: Element, profile: Profile): void {
-        if (parentEl.querySelector('.llb-select-btn')) return;
+    function createSelectBtn(profile: Profile): HTMLDivElement {
+        const wrapper = document.createElement('div');
+        wrapper.className = 'llb-select-wrapper';
+        wrapper.style.gridRow = '1';
 
         const btn = document.createElement('button');
         btn.className = 'llb-select-btn';
@@ -100,7 +110,8 @@
             toggleSelection(profile, btn);
         });
 
-        parentEl.appendChild(btn);
+        wrapper.appendChild(btn);
+        return wrapper;
     }
 
     function processCard(card: Element): void {
@@ -109,8 +120,7 @@
         let name: string | undefined,
             url: string | undefined,
             headline: string | undefined,
-            location: string | undefined,
-            actionsContainer: Element | null = null;
+            location: string | undefined;
 
         // New Layout
         const titleLinkNew = card.querySelector('[data-view-name="search-result-lockup-title"]') as HTMLAnchorElement | null;
@@ -129,8 +139,14 @@
                 if (!location) { location = p.innerText.trim(); break; }
             }
 
+            if (!url || !name) return;
+
             const profile: Profile = { name, url, headline: headline || '', location: location || '' };
-            waitForConnectBtn(container, profile);
+
+            // Find the wrapping <a> tag and append at the end
+            const cardLink = card.closest('a') || card;
+            cardLink.appendChild(createSelectBtn(profile));
+
             (card as HTMLElement).dataset.llbProcessed = "true";
             return;
 
@@ -147,32 +163,17 @@
                 const locationEl = card.querySelector('.entity-result__secondary-subtitle');
                 location = locationEl ? locationEl.textContent?.trim() || '' : '';
 
-                actionsContainer = card.querySelector('.entity-result__actions');
+                if (!url || !name) return;
+
+                const profile: Profile = { name, url, headline: headline || '', location: location || '' };
+                const actionsContainer = card.querySelector('.entity-result__actions');
+
+                if (actionsContainer) {
+                    actionsContainer.appendChild(createSelectBtn(profile));
+                } else {
+                    card.appendChild(createSelectBtn(profile));
+                }
             }
-        }
-
-        if (!url || !name) return;
-
-        const profile: Profile = { name, url, headline: headline || '', location: location || '' };
-
-        const btn = document.createElement('button');
-        btn.className = 'llb-select-btn';
-        btn.setAttribute('data-llb-url', profile.url);
-        const isSelected = !!selectedProfiles[url];
-
-        btn.textContent = isSelected ? "Unselect" : "Select";
-        if (isSelected) btn.classList.add("llb-selected");
-
-        btn.addEventListener('click', (e) => {
-            e.preventDefault();
-            e.stopPropagation();
-            toggleSelection(profile, btn);
-        });
-
-        if (actionsContainer) {
-            actionsContainer.appendChild(btn);
-        } else {
-            card.appendChild(btn);
         }
 
         (card as HTMLElement).dataset.llbProcessed = "true";

@@ -9,9 +9,11 @@
   cursor: pointer;
   transition: all 0.2s;
   font-family: -apple-system, system-ui, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", "Fira Sans", Ubuntu, Oxygen, "Oxygen Sans", Cantarell, "Droid Sans", "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Lucida Grande", Helvetica, Arial, sans-serif;
-  font-size: 1.4rem; /* match linkedin sizing roughly */
+  font-size: 1.4rem;
+  /* match linkedin sizing roughly */
   line-height: 20px;
-  margin-left: 8px; /* space from other buttons */
+  margin-left: 8px;
+  /* space from other buttons */
 }
 
 .llb-select-btn:hover {
