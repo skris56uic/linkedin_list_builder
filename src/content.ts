@@ -18,6 +18,24 @@
         observeMutations();
     });
 
+    // Listen for messages from popup
+    chrome.runtime.onMessage.addListener((message: { action: string; profileUrl?: string }) => {
+        if (message.action === 'removeProfile' && message.profileUrl) {
+            delete selectedProfiles[message.profileUrl];
+            const btn = document.querySelector(`.llb-select-btn[data-llb-url="${message.profileUrl}"]`) as HTMLButtonElement | null;
+            if (btn) {
+                btn.textContent = 'Select';
+                btn.classList.remove('llb-selected');
+            }
+        } else if (message.action === 'clearAll') {
+            selectedProfiles = {};
+            document.querySelectorAll('.llb-select-btn').forEach(btn => {
+                btn.textContent = 'Select';
+                btn.classList.remove('llb-selected');
+            });
+        }
+    });
+
     async function toggleSelection(profile: Profile, btnElement: HTMLButtonElement): Promise<void> {
         const profileId = profile.url;
 
@@ -70,6 +88,7 @@
 
         const btn = document.createElement('button');
         btn.className = 'llb-select-btn';
+        btn.setAttribute('data-llb-url', profile.url);
         const isSelected = !!selectedProfiles[profile.url];
 
         btn.textContent = isSelected ? "Unselect" : "Select";
@@ -138,6 +157,7 @@
 
         const btn = document.createElement('button');
         btn.className = 'llb-select-btn';
+        btn.setAttribute('data-llb-url', profile.url);
         const isSelected = !!selectedProfiles[url];
 
         btn.textContent = isSelected ? "Unselect" : "Select";

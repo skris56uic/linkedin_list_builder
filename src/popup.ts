@@ -9,6 +9,25 @@
 
     type ProfileMap = Record<string, Profile>;
 
+    function sendToActiveTab(message: { action: string; profileUrl?: string }): void {
+        chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
+            if (tabs[0]?.id) {
+                chrome.tabs.sendMessage(tabs[0].id, message);
+            }
+        });
+    }
+
+    function removeProfile(profileUrl: string): void {
+        chrome.storage.local.get(['selectedProfiles'], (result: { selectedProfiles?: ProfileMap }) => {
+            const profiles: ProfileMap = result.selectedProfiles || {};
+            delete profiles[profileUrl];
+            chrome.storage.local.set({ selectedProfiles: profiles }, () => {
+                updateUI(profiles);
+                sendToActiveTab({ action: 'removeProfile', profileUrl });
+            });
+        });
+    }
+
     function updateUI(profiles: ProfileMap): void {
         const countSpan = document.getElementById('count')!;
         const previewDiv = document.getElementById('preview')!;
@@ -26,8 +45,19 @@
             const p = profiles[id];
             const div = document.createElement('div');
             div.className = 'preview-item';
-            div.textContent = p.name;
-            div.title = p.headline || "";
+
+            const nameSpan = document.createElement('span');
+            nameSpan.textContent = p.name;
+            nameSpan.title = p.headline || '';
+
+            const closeBtn = document.createElement('button');
+            closeBtn.className = 'preview-item-close';
+            closeBtn.textContent = '×';
+            closeBtn.title = 'Remove';
+            closeBtn.addEventListener('click', () => removeProfile(id));
+
+            div.appendChild(nameSpan);
+            div.appendChild(closeBtn);
             previewDiv.appendChild(div);
         });
     }
@@ -139,6 +169,7 @@
         document.getElementById('clearBtn')!.addEventListener('click', () => {
             chrome.storage.local.set({ selectedProfiles: {} }, () => {
                 updateUI({});
+                sendToActiveTab({ action: 'clearAll' });
             });
         });
     });
